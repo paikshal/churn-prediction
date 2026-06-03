@@ -25,19 +25,19 @@ model = load_model()
 # App Header
 # ============================================================
 st.title("📡 Customer Churn Prediction App")
-st.markdown("### Is application se aap predict kar sakte hain ki koi customer company chhodega ya nahi.")
+st.markdown("### Predict whether a customer will leave the company or stay.")
 st.divider()
 
 # ============================================================
 # Sidebar - User Input Fields
 # ============================================================
-st.sidebar.header("🧾 Customer Information Bharein")
+st.sidebar.header("🧾 Enter Customer Information")
 
 # --- Contract & Tenure ---
 contract = st.sidebar.selectbox(
     "Contract Type",
     options=["Month-to-month", "One year", "Two year"],
-    help="Customer ka contract kitne samay ka hai?"
+    help="How long is the customer's contract?"
 )
 contract_map = {"Month-to-month": 0, "One year": 1, "Two year": 2}
 contract_encoded = contract_map[contract]
@@ -45,21 +45,21 @@ contract_encoded = contract_map[contract]
 tenure = st.sidebar.slider(
     "Tenure (Months)",
     min_value=0, max_value=72, value=12,
-    help="Customer kitne mahine se company ke sath hai?"
+    help="How many months has the customer been with the company?"
 )
 
 # --- Charges ---
 monthly_charges = st.sidebar.slider(
     "Monthly Charges ($)",
     min_value=18.0, max_value=120.0, value=65.0, step=0.5,
-    help="Customer ki monthly bill"
+    help="Monthly bill of the customer"
 )
 
 # --- Internet Service ---
 internet_service = st.sidebar.selectbox(
     "Internet Service",
     options=["DSL", "Fiber optic", "No"],
-    help="Customer kaunsi internet service use karta hai?"
+    help="Which internet service does the customer use?"
 )
 internet_fiber = 1 if internet_service == "Fiber optic" else 0
 internet_no = 1 if internet_service == "No" else 0
@@ -68,7 +68,7 @@ internet_no = 1 if internet_service == "No" else 0
 online_security = st.sidebar.selectbox(
     "Online Security",
     options=["Yes", "No", "No internet service"],
-    help="Kya customer ke paas Online Security hai?"
+    help="Does the customer have Online Security?"
 )
 online_security_encoded = 1 if online_security == "Yes" else 0
 
@@ -76,7 +76,7 @@ online_security_encoded = 1 if online_security == "Yes" else 0
 tech_support = st.sidebar.selectbox(
     "Tech Support",
     options=["Yes", "No", "No internet service"],
-    help="Kya customer Tech Support use karta hai?"
+    help="Does the customer use Tech Support?"
 )
 tech_support_encoded = 1 if tech_support == "Yes" else 0
 
@@ -84,7 +84,7 @@ tech_support_encoded = 1 if tech_support == "Yes" else 0
 paperless_billing = st.sidebar.selectbox(
     "Paperless Billing",
     options=["Yes", "No"],
-    help="Kya customer ka billing paperless hai?"
+    help="Is the customer's billing paperless?"
 )
 paperless_billing_encoded = 1 if paperless_billing == "Yes" else 0
 
@@ -92,7 +92,7 @@ paperless_billing_encoded = 1 if paperless_billing == "Yes" else 0
 payment_method = st.sidebar.selectbox(
     "Payment Method",
     options=["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"],
-    help="Customer kaise payment karta hai?"
+    help="How does the customer make payments?"
 )
 is_autometic_payment = 1 if "automatic" in payment_method.lower() else 0
 
@@ -100,11 +100,11 @@ is_autometic_payment = 1 if "automatic" in payment_method.lower() else 0
 senior_citizen = st.sidebar.selectbox(
     "Senior Citizen?",
     options=["No", "Yes"],
-    help="Kya customer senior citizen (budhapa) hai?"
+    help="Is the customer a senior citizen?"
 )
 senior_citizen_encoded = 1 if senior_citizen == "Yes" else 0
 
-# Note: Partner aur Dependents model training mein nahi the, isliye remove kiye
+# Note: Partner and Dependents were not in model training, so they were removed
 
 # ============================================================
 # Prepare Input Data for Model
@@ -119,7 +119,7 @@ input_data = pd.DataFrame({
     "TechSupport": [tech_support_encoded],
     "PaperlessBilling": [paperless_billing_encoded],
     "SeniorCitizen": [senior_citizen_encoded],
-    "is_Autometic_payment": [is_autometic_payment]  # Training mein typo tha
+    "is_Autometic_payment": [is_autometic_payment]  # Typo in training column name
 })
 
 # ============================================================
@@ -143,7 +143,7 @@ with col2:
         no_churn_prob = prediction_proba[0] * 100
 
         if prediction == 1:
-            st.error(f"⚠️ **Customer CHURN KAREGA!**")
+            st.error(f"⚠️ **Customer will CHURN!**")
             st.metric(
                 label="Churn Probability",
                 value=f"{churn_prob:.1f}%",
@@ -151,7 +151,7 @@ with col2:
                 delta_color="inverse"
             )
         else:
-            st.success(f"✅ **Customer NAHI CHHODEGA!**")
+            st.success(f"✅ **Customer will NOT Churn!**")
             st.metric(
                 label="Churn Probability",
                 value=f"{churn_prob:.1f}%",
