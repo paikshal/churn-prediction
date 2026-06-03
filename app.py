@@ -314,7 +314,8 @@ with tab2:
             # 2. Numeric Features vs Churn
             elif eda_option == "Numeric Features vs Churn (Boxplots & KDE)":
                 num_cols = ['tenure', 'MonthlyCharges', 'TotalCharges']
-                df_data['TotalCharges'] = pd.to_numeric(df_data['TotalCharges'], errors='coerce').fillna(df_data['TotalCharges'].median())
+                df_data['TotalCharges'] = pd.to_numeric(df_data['TotalCharges'], errors='coerce')
+                df_data['TotalCharges'] = df_data['TotalCharges'].fillna(df_data['TotalCharges'].median())
                 
                 st.markdown("#### Boxplots (Value Range & Outliers)")
                 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
