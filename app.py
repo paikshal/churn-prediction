@@ -185,71 +185,147 @@ with tab2:
         return pd.read_csv("Churn_dataset.csv")
 
     try:
-        df_data = load_data()
+        df_original = load_data()
+
+        # Filtering options
+        st.subheader("🔍 Filter Options")
         
-        # KPI Cards
-        total_cust = len(df_data)
-        churn_rate = (df_data['Churn'] == 'Yes').mean() * 100
-        avg_charge = df_data['MonthlyCharges'].mean()
+        # Sidebar/Prediction Profile sync toggle
+        filter_mode = st.radio(
+            "Select Filtering Mode:",
+            options=["Show All Data", "Sync with Sidebar Prediction Profile", "Custom Manual Filters"],
+            horizontal=True
+        )
 
-        kpi1, kpi2, kpi3 = st.columns(3)
-        kpi1.metric("Total Customers", f"{total_cust:,}")
-        kpi2.metric("Overall Churn Rate", f"{churn_rate:.1f}%")
-        kpi3.metric("Average Monthly Charges", f"${avg_charge:.2f}")
+        df_data = df_original.copy()
 
-        st.divider()
+        if filter_mode == "Sync with Sidebar Prediction Profile":
+            st.info(f"Filtering dataset to match: Contract='{contract}', InternetService='{internet_service}', OnlineSecurity='{online_security}', TechSupport='{tech_support}', PaperlessBilling='{paperless_billing}', PaymentMethod='{payment_method}', SeniorCitizen='{senior_citizen}'")
+            
+            # Perform filtering on categorical fields
+            df_data = df_data[
+                (df_data['Contract'] == contract) &
+                (df_data['InternetService'] == internet_service) &
+                (df_data['OnlineSecurity'] == online_security) &
+                (df_data['TechSupport'] == tech_support) &
+                (df_data['PaperlessBilling'] == paperless_billing) &
+                (df_data['SeniorCitizen'] == (1 if senior_citizen == "Yes" else 0)) &
+                (df_data['PaymentMethod'] == payment_method)
+            ]
+            
+            if len(df_data) == 0:
+                st.warning("⚠️ No exact matches found for this profile in the dataset. Showing fallback results by filtering only Contract and Internet Service.")
+                df_data = df_original[
+                    (df_original['Contract'] == contract) &
+                    (df_original['InternetService'] == internet_service)
+                ]
 
-        # Row 1: Distributions
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.subheader("🎯 Churn Distribution")
-            fig, ax = plt.subplots(figsize=(6, 4))
-            sns.countplot(data=df_data, x='Churn', palette='Set2', ax=ax)
-            ax.set_ylabel("Number of Customers")
-            ax.set_xlabel("Churn Status")
-            st.pyplot(fig)
-            plt.close(fig)
+        elif filter_mode == "Custom Manual Filters":
+            col_f1, col_f2, col_f3 = st.columns(3)
+            with col_f1:
+                selected_contracts = st.multiselect(
+                    "Contract Type",
+                    options=df_original['Contract'].unique(),
+                    default=df_original['Contract'].unique()
+                )
+            with col_f2:
+                selected_internet = st.multiselect(
+                    "Internet Service",
+                    options=df_original['InternetService'].unique(),
+                    default=df_original['InternetService'].unique()
+                )
+            with col_f3:
+                selected_senior = st.multiselect(
+                    "Senior Citizen (0=No, 1=Yes)",
+                    options=[0, 1],
+                    default=[0, 1]
+                )
+            
+            # Apply custom filters
+            df_data = df_data[
+                (df_data['Contract'].isin(selected_contracts)) &
+                (df_data['InternetService'].isin(selected_internet)) &
+                (df_data['SeniorCitizen'].isin(selected_senior))
+            ]
 
-        with col_b:
-            st.subheader("📜 Churn by Contract Type")
-            fig, ax = plt.subplots(figsize=(6, 4))
-            sns.countplot(data=df_data, x='Contract', hue='Churn', palette='Set2', ax=ax)
-            ax.set_ylabel("Number of Customers")
-            ax.set_xlabel("Contract Type")
-            st.pyplot(fig)
-            plt.close(fig)
+        if len(df_data) == 0:
+            st.error("❌ No data matches the selected filters. Please adjust your criteria.")
+        else:
+            st.caption(f"Showing analysis for **{len(df_data):,}** out of **{len(df_original):,}** customers.")
+            
+            # KPI Cards
+            total_cust = len(df_data)
+            churn_rate = (df_data['Churn'] == 'Yes').mean() * 100
+            avg_charge = df_data['MonthlyCharges'].mean()
 
-        # Row 2: Monthly Charges & Tenure
-        col_c, col_d = st.columns(2)
-        with col_c:
-            st.subheader("💳 Monthly Charges vs Churn")
-            fig, ax = plt.subplots(figsize=(6, 4))
-            sns.kdeplot(data=df_data, x='MonthlyCharges', hue='Churn', fill=True, common_norm=False, palette='Set2', ax=ax)
-            ax.set_xlabel("Monthly Charges ($)")
-            st.pyplot(fig)
-            plt.close(fig)
+            kpi1, kpi2, kpi3 = st.columns(3)
+            kpi1.metric("Selected Customers", f"{total_cust:,}")
+            kpi2.metric("Segment Churn Rate", f"{churn_rate:.1f}%")
+            kpi3.metric("Avg Monthly Charges", f"${avg_charge:.2f}")
 
-        with col_d:
-            st.subheader("⏳ Tenure vs Churn")
-            fig, ax = plt.subplots(figsize=(6, 4))
-            sns.kdeplot(data=df_data, x='tenure', hue='Churn', fill=True, common_norm=False, palette='Set2', ax=ax)
-            ax.set_xlabel("Tenure (Months)")
-            st.pyplot(fig)
-            plt.close(fig)
+            st.divider()
 
-        st.divider()
+            # Row 1: Distributions
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.subheader("🎯 Churn Distribution")
+                fig, ax = plt.subplots(figsize=(6, 4))
+                sns.countplot(data=df_data, x='Churn', order=['No', 'Yes'], palette='Set2', ax=ax)
+                ax.set_ylabel("Number of Customers")
+                ax.set_xlabel("Churn Status")
+                st.pyplot(fig)
+                plt.close(fig)
 
-        # Row 3: Heatmap
-        st.subheader("🔗 Feature Correlation Matrix")
-        df_numeric = df_data.copy()
-        df_numeric['Churn'] = df_numeric['Churn'].map({'Yes': 1, 'No': 0})
-        df_numeric['TotalCharges'] = pd.to_numeric(df_numeric['TotalCharges'], errors='coerce').fillna(0)
-        corr_cols = ['tenure', 'MonthlyCharges', 'TotalCharges', 'Churn']
-        
-        fig, ax = plt.subplots(figsize=(8, 4))
-        sns.heatmap(df_numeric[corr_cols].corr(), annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, ax=ax)
-        st.pyplot(fig)
-        plt.close(fig)
+            with col_b:
+                st.subheader("📜 Churn by Contract Type")
+                fig, ax = plt.subplots(figsize=(6, 4))
+                sns.countplot(data=df_data, x='Contract', hue='Churn', order=sorted(df_data['Contract'].unique()), palette='Set2', ax=ax)
+                ax.set_ylabel("Number of Customers")
+                ax.set_xlabel("Contract Type")
+                st.pyplot(fig)
+                plt.close(fig)
+
+            # Row 2: Monthly Charges & Tenure
+            col_c, col_d = st.columns(2)
+            with col_c:
+                st.subheader("💳 Monthly Charges vs Churn")
+                fig, ax = plt.subplots(figsize=(6, 4))
+                if len(df_data['MonthlyCharges'].unique()) > 1:
+                    sns.kdeplot(data=df_data, x='MonthlyCharges', hue='Churn', fill=True, common_norm=False, palette='Set2', ax=ax)
+                else:
+                    sns.histplot(data=df_data, x='MonthlyCharges', hue='Churn', multiple='stack', palette='Set2', ax=ax)
+                ax.set_xlabel("Monthly Charges ($)")
+                st.pyplot(fig)
+                plt.close(fig)
+
+            with col_d:
+                st.subheader("⏳ Tenure vs Churn")
+                fig, ax = plt.subplots(figsize=(6, 4))
+                if len(df_data['tenure'].unique()) > 1:
+                    sns.kdeplot(data=df_data, x='tenure', hue='Churn', fill=True, common_norm=False, palette='Set2', ax=ax)
+                else:
+                    sns.histplot(data=df_data, x='tenure', hue='Churn', multiple='stack', palette='Set2', ax=ax)
+                ax.set_xlabel("Tenure (Months)")
+                st.pyplot(fig)
+                plt.close(fig)
+
+            st.divider()
+
+            # Row 3: Heatmap
+            st.subheader("🔗 Feature Correlation Matrix")
+            df_numeric = df_data.copy()
+            df_numeric['Churn'] = df_numeric['Churn'].map({'Yes': 1, 'No': 0})
+            df_numeric['TotalCharges'] = pd.to_numeric(df_numeric['TotalCharges'], errors='coerce').fillna(0)
+            corr_cols = ['tenure', 'MonthlyCharges', 'TotalCharges', 'Churn']
+            
+            corr_matrix = df_numeric[corr_cols].corr()
+            if corr_matrix.isnull().values.any():
+                st.info("Correlation matrix details are unavailable because some features are constant in this filtered subset.")
+            else:
+                fig, ax = plt.subplots(figsize=(8, 4))
+                sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, ax=ax)
+                st.pyplot(fig)
+                plt.close(fig)
 
     except Exception as e:
         st.error(f"Error loading dashboard charts: {e}")
