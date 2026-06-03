@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # ============================================================
 # Page Configuration
@@ -123,55 +125,138 @@ input_data = pd.DataFrame({
 })
 
 # ============================================================
-# Main Page - Display Input Summary & Prediction
+# Main Page Tabs (Prediction & Dashboard)
 # ============================================================
-col1, col2 = st.columns([1, 1])
+tab1, tab2 = st.tabs(["🔮 Predict Churn", "📊 Analytics Dashboard"])
 
-with col1:
-    st.subheader("📋 Customer Summary")
-    st.table(input_data.T.rename(columns={0: "Value"}))
+with tab1:
+    col1, col2 = st.columns([1, 1])
 
-with col2:
-    st.subheader("🔮 Prediction Result")
+    with col1:
+        st.subheader("📋 Customer Summary")
+        st.table(input_data.T.rename(columns={0: "Value"}))
 
-    if st.button("🚀 Predict Churn", type="primary", use_container_width=True):
-        # Model prediction
-        prediction = model.predict(input_data)[0]
-        prediction_proba = model.predict_proba(input_data)[0]
+    with col2:
+        st.subheader("🔮 Prediction Result")
 
-        churn_prob = prediction_proba[1] * 100
-        no_churn_prob = prediction_proba[0] * 100
+        if st.button("🚀 Predict Churn", type="primary", use_container_width=True):
+            # Model prediction
+            prediction = model.predict(input_data)[0]
+            prediction_proba = model.predict_proba(input_data)[0]
 
-        if prediction == 1:
-            st.error(f"⚠️ **Customer will CHURN!**")
-            st.metric(
-                label="Churn Probability",
-                value=f"{churn_prob:.1f}%",
-                delta="High Risk",
-                delta_color="inverse"
-            )
-        else:
-            st.success(f"✅ **Customer will NOT Churn!**")
-            st.metric(
-                label="Churn Probability",
-                value=f"{churn_prob:.1f}%",
-                delta="Low Risk",
-                delta_color="normal"
-            )
+            churn_prob = prediction_proba[1] * 100
+            no_churn_prob = prediction_proba[0] * 100
 
-        # Probability Bar
-        st.write("**Probability Breakdown:**")
-        st.progress(int(churn_prob), text=f"Churn Risk: {churn_prob:.1f}%")
+            if prediction == 1:
+                st.error(f"⚠️ **Customer will CHURN!**")
+                st.metric(
+                    label="Churn Probability",
+                    value=f"{churn_prob:.1f}%",
+                    delta="High Risk",
+                    delta_color="inverse"
+                )
+            else:
+                st.success(f"✅ **Customer will NOT Churn!**")
+                st.metric(
+                    label="Churn Probability",
+                    value=f"{churn_prob:.1f}%",
+                    delta="Low Risk",
+                    delta_color="normal"
+                )
+
+            # Probability Bar
+            st.write("**Probability Breakdown:**")
+            st.progress(int(churn_prob), text=f"Churn Risk: {churn_prob:.1f}%")
+
+            st.divider()
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.info(f"✅ No Churn: **{no_churn_prob:.1f}%**")
+            with col_b:
+                st.warning(f"⚠️ Churn: **{churn_prob:.1f}%**")
+
+with tab2:
+    st.header("📊 Customer Churn Analytics Dashboard")
+    st.markdown("This dashboard displays insights and patterns from the Telco Customer Churn dataset.")
+
+    # Load dataset
+    @st.cache_data
+    def load_data():
+        return pd.read_csv("Churn_dataset.csv")
+
+    try:
+        df_data = load_data()
+        
+        # KPI Cards
+        total_cust = len(df_data)
+        churn_rate = (df_data['Churn'] == 'Yes').mean() * 100
+        avg_charge = df_data['MonthlyCharges'].mean()
+
+        kpi1, kpi2, kpi3 = st.columns(3)
+        kpi1.metric("Total Customers", f"{total_cust:,}")
+        kpi2.metric("Overall Churn Rate", f"{churn_rate:.1f}%")
+        kpi3.metric("Average Monthly Charges", f"${avg_charge:.2f}")
 
         st.divider()
+
+        # Row 1: Distributions
         col_a, col_b = st.columns(2)
         with col_a:
-            st.info(f"✅ No Churn: **{no_churn_prob:.1f}%**")
+            st.subheader("🎯 Churn Distribution")
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.countplot(data=df_data, x='Churn', palette='Set2', ax=ax)
+            ax.set_ylabel("Number of Customers")
+            ax.set_xlabel("Churn Status")
+            st.pyplot(fig)
+            plt.close(fig)
+
         with col_b:
-            st.warning(f"⚠️ Churn: **{churn_prob:.1f}%**")
+            st.subheader("📜 Churn by Contract Type")
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.countplot(data=df_data, x='Contract', hue='Churn', palette='Set2', ax=ax)
+            ax.set_ylabel("Number of Customers")
+            ax.set_xlabel("Contract Type")
+            st.pyplot(fig)
+            plt.close(fig)
+
+        # Row 2: Monthly Charges & Tenure
+        col_c, col_d = st.columns(2)
+        with col_c:
+            st.subheader("💳 Monthly Charges vs Churn")
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.kdeplot(data=df_data, x='MonthlyCharges', hue='Churn', fill=True, common_norm=False, palette='Set2', ax=ax)
+            ax.set_xlabel("Monthly Charges ($)")
+            st.pyplot(fig)
+            plt.close(fig)
+
+        with col_d:
+            st.subheader("⏳ Tenure vs Churn")
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.kdeplot(data=df_data, x='tenure', hue='Churn', fill=True, common_norm=False, palette='Set2', ax=ax)
+            ax.set_xlabel("Tenure (Months)")
+            st.pyplot(fig)
+            plt.close(fig)
+
+        st.divider()
+
+        # Row 3: Heatmap
+        st.subheader("🔗 Feature Correlation Matrix")
+        df_numeric = df_data.copy()
+        df_numeric['Churn'] = df_numeric['Churn'].map({'Yes': 1, 'No': 0})
+        df_numeric['TotalCharges'] = pd.to_numeric(df_numeric['TotalCharges'], errors='coerce').fillna(0)
+        corr_cols = ['tenure', 'MonthlyCharges', 'TotalCharges', 'Churn']
+        
+        fig, ax = plt.subplots(figsize=(8, 4))
+        sns.heatmap(df_numeric[corr_cols].corr(), annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5, ax=ax)
+        st.pyplot(fig)
+        plt.close(fig)
+
+    except Exception as e:
+        st.error(f"Error loading dashboard charts: {e}")
 
 # ============================================================
 # Footer
 # ============================================================
 st.divider()
 st.caption("Model: Gradient Boosting Classifier | Dataset: Telco Customer Churn")
+
