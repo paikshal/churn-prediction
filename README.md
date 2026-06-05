@@ -1,4 +1,5 @@
 # Customer Churn Prediction Project
+##link [https://churn-prediction-paikshal.streamlit.app/]
 
 This project predicts customer churn for a telecom company using a Gradient Boosting Classifier. It includes a Jupyter Notebook for exploratory data analysis (EDA) & modeling, and a Streamlit web application for interactive predictions.
 
