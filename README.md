@@ -9,7 +9,7 @@
 
 ---
 
-## 🏷️ Resume Summary
+## 
 
 **Customer Churn Prediction (Telecom):** Built an end-to-end binary classification system on a class-imbalanced dataset (73.5% No Churn, 26.5% Churn) using a **Gradient Boosting Classifier** trained on 7,043 customer records across 21 features. Performed feature engineering — created `is_Automatic_Payment` binary flag, bucketed `tenure` into 4 lifecycle groups (0–12, 13–24, 25–48, 48+ months), and applied one-hot encoding — reducing the feature space from 21 to 10 high-impact predictors. Deployed the model as a **Streamlit web app** with real-time churn probability scoring and a 7-view interactive analytics dashboard supporting segment-level filtering, correlation heatmaps, KDE plots, and tenure group analysis.
 
